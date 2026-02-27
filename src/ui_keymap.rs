@@ -55,20 +55,20 @@ pub fn render_keymap(
 
     // Only show n/N navigation hints after search is confirmed (Enter pressed)
     if is_confirmed && !is_empty {
-      // SearchNext - hardcoded 'n'
+      // SearchNext - Enter
       spans.push(Span::raw(" <"));
       spans.push(Span::styled(
-        print_key(&Key::new(KeyCode::Char('n'), KeyModifiers::NONE)),
+        print_key(&Key::new(KeyCode::Enter, KeyModifiers::NONE)),
         Style::default().fg(Color::Yellow),
       ));
       spans.push(Span::raw(": "));
       spans.push(Span::raw(AppEvent::SearchNext.desc()));
       spans.push(Span::raw("> "));
 
-      // SearchPrev - hardcoded 'N' (Shift+n)
+      // SearchPrev - Shift+Enter
       spans.push(Span::raw(" <"));
       spans.push(Span::styled(
-        print_key(&Key::new(KeyCode::Char('N'), KeyModifiers::NONE)),
+        print_key(&Key::new(KeyCode::Enter, KeyModifiers::SHIFT)),
         Style::default().fg(Color::Yellow),
       ));
       spans.push(Span::raw(": "));

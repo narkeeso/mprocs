@@ -1095,7 +1095,12 @@ impl App {
         modifiers: KeyModifiers::NONE,
         kind: KeyEventKind::Press | KeyEventKind::Repeat,
         state: _,
-      }) => {
+      // Only handle Enter for confirming search when not yet confirmed;
+      // once confirmed, Enter falls through to the navigation handler below.
+      }) if self.state.get_current_proc()
+        .and_then(|p| p.search.as_ref())
+        .is_some_and(|s| !s.confirmed) =>
+      {
         if let Some(proc) = self.state.get_current_proc_mut() {
           if let Some(search) = &mut proc.search {
             // Only confirm if there are matches
@@ -1116,14 +1121,14 @@ impl App {
             if let Some(search) = &mut proc.search {
               if search.confirmed {
                 // Confirmed mode: handle navigation keys
-                match key_event.code {
-                  KeyCode::Char('n') => {
+                match (key_event.code, key_event.modifiers) {
+                  (KeyCode::Char('n'), _) | (KeyCode::Enter, KeyModifiers::NONE) => {
                     // In vim ? (backward) search, n goes to older matches
                     search.prev_match();
                     self.scroll_to_current_match();
                     loop_action.render();
                   }
-                  KeyCode::Char('N') => {
+                  (KeyCode::Char('N'), _) | (KeyCode::Enter, KeyModifiers::SHIFT) => {
                     // In vim ? (backward) search, N goes to newer matches
                     search.next_match();
                     self.scroll_to_current_match();
