@@ -43,6 +43,7 @@ shows output of each command separately and allows to interact with processes
     - [$select operator](#select-operator)
     - [Running scripts from package.json](#running-scripts-from-packagejson)
   - [Default keymap](#default-keymap)
+  - [Search mode](#search-mode)
   - [Remote control](#remote-control)
 - [FAQ](#faq)
   - [mprocs vs tmux/screen](#mprocs-vs-tmuxscreen)
@@ -282,6 +283,7 @@ Process list focused:
 Process output focused:
 
 - `C-a` - Focus processes pane
+- `C-f` - Enter search mode
 
 Copy mode:
 
@@ -297,6 +299,28 @@ Copy mode:
 - `l` or `→` - Move cursor right
 - `j` or `↓` - Move cursor down
 - `h` or `←` - Move cursor left
+
+### Search mode
+
+Search mode allows you to search through terminal output with vim-style backward search.
+Press `Ctrl+F` (or your configured key) to enter search mode.
+
+**Editing mode** (while typing query):
+- Type to search with real-time match highlighting
+- `Enter` - Confirm search and enable navigation
+- `Esc` - Leave search mode
+
+**Confirmed mode** (after pressing Enter):
+- `n` - Go to older match (vim backward search convention)
+- `N` - Go to newer match
+- `Esc` - Leave search mode
+
+While in search mode:
+- Terminal output is frozen (like copy mode)
+- Mouse scrolling works to adjust view
+- Clicking the process pane exits search mode
+- Matches are centered in the viewport
+- Current match is highlighted in red, other matches in yellow
 
 ### Remote control
 
@@ -343,6 +367,10 @@ Commands are encoded as yaml. Available commands:
 - `{c: copy-mode-end}` - Start selecting end point of the selection.
 - `{c: copy-mode-copy}` - Copy selected text to the clipboard and leave copy
   mode.
+- `{c: search-enter}` - Enter search mode
+- `{c: search-leave}` - Leave search mode
+- `{c: search-next}` - Go to next (older) search match
+- `{c: search-prev}` - Go to previous (newer) search match
 - `{c: send-key, key: "<KEY>"}` - Send key to current process. Key examples:
   `<C-a>`, `<Enter>`
 - `{c: batch, cmds: [{c: focus-procs}, …]}` - Send multiple commands
