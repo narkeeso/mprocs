@@ -277,6 +277,22 @@ impl Grid {
     self.scrollback_offset
   }
 
+  pub fn total_rows(&self) -> usize {
+    self.rows.len()
+  }
+
+  pub fn row_text(&self, abs_index: usize) -> String {
+    if let Some(row) = self.rows.get(abs_index) {
+      row.text()
+    } else {
+      String::new()
+    }
+  }
+
+  pub fn visible_row_abs_start(&self) -> usize {
+    self.row0() - self.scrollback_offset
+  }
+
   pub fn set_scrollback(&mut self, rows: usize) {
     self.scrollback_offset = rows.min(self.row0());
   }

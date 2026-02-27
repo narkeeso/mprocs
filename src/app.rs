@@ -2,7 +2,8 @@ use std::{any::Any, collections::HashMap, fmt::Debug, time::Instant};
 
 use anyhow::bail;
 use crossterm::event::{
-  Event, KeyEvent, KeyEventKind, MouseButton, MouseEventKind,
+  Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton,
+  MouseEventKind,
 };
 use futures::{future::FutureExt, select};
 use serde::{Deserialize, Serialize};
@@ -34,8 +35,8 @@ use crate::{
   proc::{
     msg::{ProcCmd, ProcUpdate},
     proc::launch_proc,
-    view::{TargetState, RESTART_THRESHOLD_SECONDS},
-    CopyMode, Pos, StopSignal,
+    view::{SearchState, TargetState, RESTART_THRESHOLD_SECONDS},
+    CopyMode, Pos, ReplySender, StopSignal,
   },
   protocol::{CltToSrv, ProxyBackend, SrvToClt},
   server::server_message::ServerMessage,
@@ -311,6 +312,14 @@ impl App {
     }) = event
     {
       return;
+    }
+
+    // Handle search input mode
+    if let Some(proc) = self.state.get_current_proc() {
+      if proc.search.is_some() {
+        self.handle_search_input(loop_action, &event);
+        return;
+      }
     }
 
     if let Some(modal) = &mut self.modal {
@@ -893,6 +902,49 @@ impl App {
         loop_action.render();
       }
 
+      AppEvent::SearchEnter => {
+        if let Some(proc) = self.state.get_current_proc_mut() {
+          if proc.search.is_none() {
+            let mut search = SearchState::new();
+            if let Some(vt_ref) = proc.vt.as_ref() {
+              let vt = vt_ref.read().unwrap();
+              // Clone screen to freeze output during search
+              search.screen = Some(vt.screen().clone());
+              search.run_search(&vt);
+            }
+            proc.search = Some(search);
+          }
+          self.state.scope = Scope::Term;
+          loop_action.render();
+        }
+      }
+      AppEvent::SearchLeave => {
+        if let Some(proc) = self.state.get_current_proc_mut() {
+          proc.search = None;
+        }
+        loop_action.render();
+      }
+      AppEvent::SearchNext => {
+        if let Some(proc) = self.state.get_current_proc_mut() {
+          if let Some(search) = &mut proc.search {
+            // In vim ? (backward) search, n continues backward to older matches
+            search.prev_match();
+            self.scroll_to_current_match();
+            loop_action.render();
+          }
+        }
+      }
+      AppEvent::SearchPrev => {
+        if let Some(proc) = self.state.get_current_proc_mut() {
+          if let Some(search) = &mut proc.search {
+            // In vim ? (backward) search, N goes opposite to newer matches
+            search.next_match();
+            self.scroll_to_current_match();
+            loop_action.render();
+          }
+        }
+      }
+
       AppEvent::SendKey { key } => {
         if let Some(proc) = self.state.get_current_proc_mut() {
           pc.send(KernelCommand::ProcCmd(proc.id, ProcCmd::SendKey(*key)));
@@ -1025,6 +1077,158 @@ impl App {
           }
         }
       },
+    }
+  }
+
+  fn handle_search_input(&mut self, loop_action: &mut LoopAction, event: &Event) {
+    match event {
+      Event::Key(KeyEvent {
+        code: KeyCode::Esc,
+        modifiers: KeyModifiers::NONE,
+        kind: KeyEventKind::Press | KeyEventKind::Repeat,
+        state: _,
+      }) => {
+        self.handle_event(loop_action, &AppEvent::SearchLeave);
+      }
+      Event::Key(KeyEvent {
+        code: KeyCode::Enter,
+        modifiers: KeyModifiers::NONE,
+        kind: KeyEventKind::Press | KeyEventKind::Repeat,
+        state: _,
+      }) => {
+        if let Some(proc) = self.state.get_current_proc_mut() {
+          if let Some(search) = &mut proc.search {
+            // Only confirm if there are matches
+            if search.matches.is_empty() {
+              // Show feedback that there's no match
+              search.no_match_feedback = Some(Instant::now());
+              loop_action.render();
+            } else {
+              search.confirmed = true;
+              loop_action.render();
+            }
+          }
+        }
+      }
+      Event::Key(key_event) => {
+        if let Some(proc) = self.state.get_current_proc_mut() {
+          if let Some(vt_ref) = proc.vt.as_ref() {
+            if let Some(search) = &mut proc.search {
+              if search.confirmed {
+                // Confirmed mode: handle navigation keys
+                match key_event.code {
+                  KeyCode::Char('n') => {
+                    // In vim ? (backward) search, n goes to older matches
+                    search.prev_match();
+                    self.scroll_to_current_match();
+                    loop_action.render();
+                  }
+                  KeyCode::Char('N') => {
+                    // In vim ? (backward) search, N goes to newer matches
+                    search.next_match();
+                    self.scroll_to_current_match();
+                    loop_action.render();
+                  }
+                  // Ignore all other keys when confirmed
+                  _ => {}
+                }
+              } else {
+                // Editing mode: handle text input
+                use tui_input::backend::crossterm::EventHandler;
+                search.input.handle_event(&Event::Key(*key_event));
+                // Clear no-match feedback when user types
+                search.no_match_feedback = None;
+                let vt = vt_ref.read().unwrap();
+                search.run_search(&vt);
+                drop(vt);
+                self.scroll_to_current_match();
+                loop_action.render();
+              }
+            }
+          }
+        }
+      }
+      Event::Mouse(mev) => {
+        let layout = self.get_layout();
+
+        // Clicking on process pane exits search mode and switches focus
+        if procs_check_hit(layout.procs, mev.column, mev.row) {
+          if let MouseEventKind::Down(_) = mev.kind {
+            // Exit search mode
+            if let Some(proc) = self.state.get_current_proc_mut() {
+              proc.search = None;
+            }
+            self.state.scope = Scope::Procs;
+            if let Some(index) = procs_get_clicked_index(
+              layout.procs,
+              mev.column,
+              mev.row,
+              &self.state,
+            ) {
+              self.state.select_proc(index);
+            }
+            loop_action.render();
+          }
+          return;
+        }
+
+        // Allow mouse scrolling during search - modify frozen screen's scrollback
+        if let Some(proc) = self.state.get_current_proc_mut() {
+          if let Some(search) = &mut proc.search {
+            if let Some(screen) = &mut search.screen {
+              let speed = self.config.mouse_scroll_speed;
+              match mev.kind {
+                MouseEventKind::ScrollUp => {
+                  screen.scroll_screen_up(speed);
+                  loop_action.render();
+                }
+                MouseEventKind::ScrollDown => {
+                  screen.scroll_screen_down(speed);
+                  loop_action.render();
+                }
+                _ => {}
+              }
+            }
+          }
+        }
+      }
+      _ => {}
+    }
+  }
+
+  fn scroll_to_current_match(&mut self) {
+    if let Some(proc) = self.state.get_current_proc_mut() {
+      if let Some(search) = &mut proc.search {
+        if let Some((match_row, _)) = search.matches.get(search.current) {
+          // Calculate new scrollback to center the match
+          let calc_scrollback = |screen: &crate::vt100::Screen<ReplySender>| {
+            let visible_rows = screen.size().rows as usize;
+            let center_offset = visible_rows / 2;
+            let target_visible_start = match_row.saturating_sub(center_offset);
+            let total_rows = screen.total_rows();
+            let target_scrollback = total_rows
+              .saturating_sub(visible_rows)
+              .saturating_sub(target_visible_start);
+            target_scrollback.min(total_rows.saturating_sub(visible_rows))
+          };
+
+          // Use frozen screen if available, otherwise use live VT
+          if let Some(screen) = &mut search.screen {
+            let new_scrollback = calc_scrollback(screen);
+            screen.set_scrollback(new_scrollback);
+          } else if let Some(vt_ref) = proc.vt.as_ref() {
+            let new_scrollback = {
+              let vt = vt_ref.read().unwrap();
+              calc_scrollback(vt.screen())
+            };
+            vt_ref
+              .write()
+              .unwrap()
+              .screen_mut()
+              .set_scrollback(new_scrollback);
+          }
+        }
+      }
     }
   }
 

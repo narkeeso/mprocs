@@ -264,6 +264,11 @@ impl Settings {
       AppEvent::CopyModeEnter,
     );
 
+    s.keymap_add_t(
+      Key::new(KeyCode::Char('f'), KeyModifiers::CONTROL),
+      AppEvent::SearchEnter,
+    );
+
     for i in 0..8 {
       let char = char::from_digit(i + 1, 10).unwrap();
       s.keymap_add_p(

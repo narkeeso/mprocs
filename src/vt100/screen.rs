@@ -200,6 +200,18 @@ impl<Reply: TermReplySender> Screen<Reply> {
     self.grid_mut().set_scrollback(rows);
   }
 
+  pub fn total_rows(&self) -> usize {
+    self.grid().total_rows()
+  }
+
+  pub fn row_text(&self, abs_index: usize) -> String {
+    self.grid().row_text(abs_index)
+  }
+
+  pub fn visible_row_abs_start(&self) -> usize {
+    self.grid().visible_row_abs_start()
+  }
+
   pub fn scroll_screen_up(&mut self, n: usize) {
     let pos = usize::saturating_add(self.scrollback(), n);
     self.set_scrollback(pos);

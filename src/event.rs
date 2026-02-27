@@ -54,6 +54,11 @@ pub enum AppEvent {
   CopyModeCopy,
   ToggleKeymapWindow,
 
+  SearchEnter,
+  SearchLeave,
+  SearchNext,
+  SearchPrev,
+
   SendKey { key: Key },
 }
 
@@ -108,6 +113,10 @@ impl AppEvent {
       AppEvent::CopyModeEnd => "Select end position".to_string(),
       AppEvent::CopyModeCopy => "Copy selected text".to_string(),
       AppEvent::ToggleKeymapWindow => "Toggle help".to_string(),
+      AppEvent::SearchEnter => "Enter search mode".to_string(),
+      AppEvent::SearchLeave => "Leave search mode".to_string(),
+      AppEvent::SearchNext => "Older match".to_string(),
+      AppEvent::SearchPrev => "Newer match".to_string(),
       AppEvent::SendKey { key } => format!("Send {} key", key.to_string()),
     }
   }

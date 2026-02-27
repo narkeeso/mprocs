@@ -11,7 +11,7 @@ pub struct Keymap {
   pub rev_copy: HashMap<AppEvent, Key>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum KeymapGroup {
   Procs,
   Term,

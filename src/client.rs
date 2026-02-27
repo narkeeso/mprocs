@@ -1,6 +1,6 @@
 use std::io::{stdout, Write};
 
-use crossterm::event::Event;
+use crossterm::event::{Event, KeyEvent, KeyEventKind};
 use termwiz::{
   cell::AttributeChange,
   color::{ColorAttribute, ColorSpec},
@@ -238,7 +238,17 @@ async fn client_main_loop(
         _ => break,
       },
       LocalEvent::TermEvent(event) => match event? {
-        Some(event) => sender.send(CltToSrv::Key(event))?,
+        Some(event) => {
+          // Filter out Release events to prevent key event doubling
+          if let Event::Key(KeyEvent {
+            kind: KeyEventKind::Release,
+            ..
+          }) = event
+          {
+            continue;
+          }
+          sender.send(CltToSrv::Key(event))?;
+        }
         _ => break,
       },
     }

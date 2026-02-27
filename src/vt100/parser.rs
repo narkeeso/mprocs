@@ -64,6 +64,13 @@ impl<Reply: TermReplySender + Clone> Parser<Reply> {
   pub fn screen(&self) -> &crate::vt100::screen::Screen<Reply> {
     &self.screen
   }
+
+  /// Returns a mutable reference to a `Screen` object containing the
+  /// terminal state.
+  #[must_use]
+  pub fn screen_mut(&mut self) -> &mut crate::vt100::screen::Screen<Reply> {
+    &mut self.screen
+  }
 }
 
 impl<Reply: TermReplySender + Clone> std::io::Write for Parser<Reply> {

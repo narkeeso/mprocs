@@ -37,6 +37,24 @@ impl Row {
       .unwrap()
   }
 
+  pub fn text(&self) -> String {
+    let mut result = String::new();
+    let mut prev_was_wide = false;
+    for cell in &self.cells {
+      if prev_was_wide {
+        prev_was_wide = false;
+        continue;
+      }
+      if cell.has_contents() {
+        result.push_str(&cell.contents());
+        prev_was_wide = cell.is_wide();
+      } else {
+        result.push(' ');
+      }
+    }
+    result
+  }
+
   pub fn clear(&mut self, attrs: crate::vt100::attrs::Attrs) {
     for cell in &mut self.cells {
       cell.clear(attrs);
