@@ -53,6 +53,9 @@ impl SearchState {
     }
     // Use trimmed query for matching (to avoid matching every space)
     let query = query.trim_start();
+    // Smart case: case-insensitive when query is all lowercase,
+    // case-sensitive when query contains any uppercase (like vim's smartcase)
+    let smart_case = query.chars().all(|c| !c.is_uppercase());
 
     // Use frozen screen if available, otherwise use live VT
     let screen = self.screen.as_ref().unwrap_or_else(|| vt.screen());
@@ -60,8 +63,16 @@ impl SearchState {
 
     for row_idx in 0..total_rows {
       let row_text = screen.row_text(row_idx);
-      for (match_idx, _) in row_text.match_indices(query) {
-        self.matches.push((row_idx, match_idx));
+      if smart_case {
+        let row_lower = row_text.to_lowercase();
+        let query_lower = query.to_lowercase();
+        for (match_idx, _) in row_lower.match_indices(&query_lower) {
+          self.matches.push((row_idx, match_idx));
+        }
+      } else {
+        for (match_idx, _) in row_text.match_indices(query) {
+          self.matches.push((row_idx, match_idx));
+        }
       }
     }
 
