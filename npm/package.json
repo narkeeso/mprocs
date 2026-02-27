@@ -3,7 +3,10 @@
   "version": "0.9.0",
   "description": "Run multiple processes in parallel",
   "license": "MIT",
-  "repository": "github:narkeeso/mprocs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/narkeeso/mprocs.git"
+  },
   "author": {
     "name": "narkeeso",
     "email": "your@email.com"

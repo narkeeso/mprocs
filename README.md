@@ -30,13 +30,9 @@ shows output of each command separately and allows to interact with processes
 
 - [Screenshots](#screenshots)
 - [Installation](#installation)
-  - [Download binary (Linux, Macos, Windows)](#download-binary-linux-macos-windows)
   - [npm (Linux, Macos, Windows)](#npm-linux-macos-windows)
-  - [homebrew (Macos)](#homebrew-macos)
-  - [cargo (All platforms)](#cargo-all-platforms)
-  - [scoop (Windows)](#scoop-windows)
-  - [AUR (Arch Linux)](#aur-arch-linux)
-  - [MPR (Debian/Ubuntu)](#mpr-debianubuntu)
+  - [mise (Linux, Macos, Windows)](#mise-linux-macos-windows)
+  - [Download binary (Linux, Macos, Windows)](#download-binary-linux-macos-windows)
 - [Usage](#usage)
   - [Config](#config)
     - [Keymap](#keymap)
@@ -60,58 +56,22 @@ shows output of each command separately and allows to interact with processes
 
 ## Installation
 
-[![Packaging status](https://repology.org/badge/vertical-allrepos/mprocs.svg)](https://repology.org/project/mprocs/versions)
-
-### Download binary (Linux, Macos, Windows)
-
-[Download](https://github.com/pvolok/mprocs/releases) executable for your
-platform and put it into a directory included in PATH.
-
 ### npm (Linux, Macos, Windows)
 
 ```sh
-npm install -g mprocs
+npm install -g @narkeeso/mprocs
 ```
+
+### mise (Linux, Macos, Windows)
 
 ```sh
-yarn global add mprocs
+mise use -g ubi:narkeeso/mprocs
 ```
 
-### homebrew (Macos, Linux)
+### Download binary (Linux, Macos, Windows)
 
-```sh
-brew install mprocs
-```
-
-### cargo (All platforms)
-
-```sh
-cargo install mprocs
-```
-
-### scoop (Windows)
-
-```sh
-scoop install mprocs
-```
-
-### AUR (Arch Linux)
-
-```sh
-yay mprocs
-```
-
-```sh
-yay mprocs-bin
-```
-
-### MPR (Debian/Ubuntu)
-
-```sh
-git clone 'https://mpr.makedeb.org/mprocs'
-cd mprocs/
-makedeb -si
-```
+[Download](https://github.com/narkeeso/mprocs/releases) executable for your
+platform and put it into a directory included in PATH.
 
 ## Usage
 
