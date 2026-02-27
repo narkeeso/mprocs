@@ -1,8 +1,8 @@
 [package]
 name = "mprocs"
-version = "0.8.3"
+version = "0.9.0"
 description = "TUI for running multiple processes"
-repository = "https://github.com/pvolok/mprocs"
+repository = "https://github.com/narkeeso/mprocs"
 authors = ["Pavel Volokitin <pavelvolokitin@gmail.com>"]
 license = "MIT"
 edition = "2024"
