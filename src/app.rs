@@ -1121,14 +1121,14 @@ impl App {
             if let Some(search) = &mut proc.search {
               if search.confirmed {
                 // Confirmed mode: handle navigation keys
-                match (key_event.code, key_event.modifiers) {
-                  (KeyCode::Char('n'), _) | (KeyCode::Enter, KeyModifiers::NONE) => {
+                match key_event.code {
+                  KeyCode::Char('n') | KeyCode::Enter => {
                     // In vim ? (backward) search, n goes to older matches
                     search.prev_match();
                     self.scroll_to_current_match();
                     loop_action.render();
                   }
-                  (KeyCode::Char('N'), _) | (KeyCode::Enter, KeyModifiers::SHIFT) => {
+                  KeyCode::Char('N') => {
                     // In vim ? (backward) search, N goes to newer matches
                     search.next_match();
                     self.scroll_to_current_match();
